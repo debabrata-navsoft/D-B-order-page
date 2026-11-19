@@ -258,7 +258,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (item of o.items; track item.name; let i = $index) {
+            @for (item of o.items; track item.id ?? $index; let i = $index) {
               <tr class="item-row">
                 <td class="td-num">{{ i + 1 }}</td>
                 <td class="td-check">
@@ -276,12 +276,12 @@
                   {{ item.productName || item.name }}
                 </td>
                 <td class="td-sku text-red">
-                  {{ item.sku || '2008756' }}
+                  {{ item.sku || '—' }}
                 </td>
-                <td class="td-qty">{{ item.qtyOrdered || item.quantity || 7 }}</td>
+                <td class="td-qty">{{ item.qtyOrdered ?? item.quantity ?? 0 }}</td>
                 <td class="td-qty">{{ qtyPicked(item) }}</td>
                 <td class="td-qty">{{ qtyShipped(item) }}</td>
-                <td class="td-qty">{{ item.labelPrintedFor || 3 }}</td>
+                <td class="td-qty">{{ item.labelPrintedFor ?? 0 }}</td>
                 <td class="td-qty-shipping">
                   <input
                     type="number"

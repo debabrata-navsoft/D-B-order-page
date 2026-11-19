@@ -242,7 +242,7 @@ export class OrderDetailsPage implements OnInit {
   }
 
   qtyPicked(item: OrderItem): number {
-    return item.qtyPicked || item.quantity || 5;
+    return item.qtyPicked ?? item.quantity ?? 0;
   }
 
   qtyShipped(item: OrderItem): number {
@@ -264,8 +264,13 @@ export class OrderDetailsPage implements OnInit {
     if (this.hasDimErrors()) {
       return false;
     }
-    const selected = (this.order()?.items ?? []).filter((i) => i.selected !== false);
-    return selected.length > 0 && selected.every((i) => this.isQtyShippingValid(i));
+    // Multiple items: ship only the ticked items that have a Qty Shipping entered.
+    // Items left empty are skipped; at least one item must be filled, and every
+    // filled one must be valid.
+    const filled = (this.order()?.items ?? []).filter(
+      (i) => i.selected !== false && i.qtyShipping !== undefined
+    );
+    return filled.length > 0 && filled.every((i) => this.isQtyShippingValid(i));
   }
 
   onShip(): void {
