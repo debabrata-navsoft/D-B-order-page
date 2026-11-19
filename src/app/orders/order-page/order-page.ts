@@ -1,40 +1,33 @@
 import {
-  Component,
-  OnInit,
   AfterViewInit,
+  Component,
   HostListener,
+  OnInit,
   ViewChild,
+  computed,
   inject,
-  signal,
-  computed
+  signal
 } from '@angular/core';
-import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSelectModule } from '@angular/material/select';
-import { MatCardModule } from '@angular/material/card';
 
-import { Order, OrderStatus } from '../models/order.model';
+import { Order } from '../models/order.model';
 import { OrderService } from '../services/order.service';
+
+const ALL = 'ALL';
 
 @Component({
   selector: 'app-order-page',
   standalone: true,
   imports: [
     CommonModule,
-    RouterModule,
     FormsModule,
-    CurrencyPipe,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
@@ -48,7 +41,7 @@ export class OrderPage implements OnInit, AfterViewInit {
   private readonly orderService = inject(OrderService);
   private readonly router = inject(Router);
 
-  readonly displayedColumns: string[] = [
+  readonly displayedColumns = [
     'orderNumber',
     'customer',
     'email',
@@ -61,15 +54,16 @@ export class OrderPage implements OnInit, AfterViewInit {
   ];
 
   readonly dataSource = new MatTableDataSource<Order>([]);
-  readonly isLoading = signal<boolean>(true);
-  readonly allOrders = signal<Order[]>([]);
+  readonly isLoading = signal(true);
+  private allOrders: Order[] = [];
 
-  readonly searchQuery = signal<string>('');
-  readonly selectedStatus = signal<string>('ALL');
+  // ---------- Search + status filter ----------
+  readonly searchQuery = signal('');
+  readonly selectedStatus = signal(ALL);
+  readonly isStatusOpen = signal(false);
 
-  // Status filter dropdown
-  readonly statusOptions: { value: string; label: string }[] = [
-    { value: 'ALL', label: 'All Statuses' },
+  readonly statusOptions = [
+    { value: ALL, label: 'All Statuses' },
     { value: 'Packing', label: 'Packing' },
     { value: 'Processing', label: 'Processing' },
     { value: 'Shipped', label: 'Shipped' },
@@ -77,21 +71,9 @@ export class OrderPage implements OnInit, AfterViewInit {
     { value: 'Pending', label: 'Pending' },
     { value: 'Cancelled', label: 'Cancelled' }
   ];
-  readonly isStatusOpen = signal<boolean>(false);
+
   readonly selectedStatusLabel = computed(
     () => this.statusOptions.find((o) => o.value === this.selectedStatus())?.label ?? 'All Statuses'
-  );
-
-  // Summary Metrics
-  readonly totalOrdersCount = computed(() => this.allOrders().length);
-  readonly totalRevenue = computed(() =>
-    this.allOrders().reduce((acc, order) => acc + order.totalAmount, 0)
-  );
-  readonly pendingCount = computed(
-    () => this.allOrders().filter((o) => o.status === 'Pending' || o.status === 'Processing').length
-  );
-  readonly deliveredCount = computed(
-    () => this.allOrders().filter((o) => o.status === 'Delivered').length
   );
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -99,7 +81,6 @@ export class OrderPage implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.loadOrders();
-    this.setupFilterPredicate();
   }
 
   ngAfterViewInit(): void {
@@ -111,73 +92,65 @@ export class OrderPage implements OnInit, AfterViewInit {
     this.isLoading.set(true);
     this.orderService.getOrders().subscribe({
       next: (orders) => {
-        this.allOrders.set(orders);
-        this.applyFilterToDataSource();
+        this.allOrders = orders;
+        this.applyFilters();
         this.isLoading.set(false);
       },
-      error: () => {
-        this.isLoading.set(false);
-      }
+      error: () => this.isLoading.set(false)
     });
   }
 
-  private setupFilterPredicate(): void {
-    this.dataSource.filterPredicate = (order: Order, filterStr: string): boolean => {
-      const filter = JSON.parse(filterStr) as { search: string; status: string };
-      const matchesSearch =
-        !filter.search ||
-        order.orderNumber.toLowerCase().includes(filter.search) ||
-        order.customerName.toLowerCase().includes(filter.search) ||
-        order.customerEmail.toLowerCase().includes(filter.search) ||
-        (order.shippingAddress?.city != null && order.shippingAddress.city.toLowerCase().includes(filter.search)) ||
-        (order.cityStateZip != null && order.cityStateZip.toLowerCase().includes(filter.search));
+  /** Show only the orders that match the search text and the status. */
+  private applyFilters(): void {
+    const search = this.searchQuery().trim().toLowerCase();
+    const status = this.selectedStatus();
 
-      const matchesStatus =
-        filter.status === 'ALL' || order.status.toUpperCase() === filter.status.toUpperCase();
+    this.dataSource.data = this.allOrders.filter((order) => {
+      const matchesStatus = status === ALL || order.status === status;
+      const searchText = [
+        order.orderNumber,
+        order.customerName,
+        order.customerEmail,
+        order.shippingAddress?.city,
+        order.cityStateZip
+      ]
+        .join(' ')
+        .toLowerCase();
 
-      return matchesSearch && matchesStatus;
-    };
+      return matchesStatus && searchText.includes(search);
+    });
+
+    this.paginator?.firstPage(); // back to page 1 after filtering
   }
 
-  applyFilterToDataSource(): void {
-    const filter = {
-      search: this.searchQuery().trim().toLowerCase(),
-      status: this.selectedStatus()
-    };
-    this.dataSource.data = this.allOrders();
-    this.dataSource.filter = JSON.stringify(filter);
-
-    if (this.dataSource.paginator) {
-      this.dataSource.paginator.firstPage();
-    }
+  onSearchChange(value: string): void {
+    this.searchQuery.set(value);
+    this.applyFilters();
   }
 
-  onSearchChange(val: string): void {
-    this.searchQuery.set(val);
-    this.applyFilterToDataSource();
+  clearSearch(): void {
+    this.onSearchChange('');
   }
 
-  onStatusChange(val: string): void {
-    this.selectedStatus.set(val);
-    this.applyFilterToDataSource();
+  onStatusChange(value: string): void {
+    this.selectedStatus.set(value);
+    this.applyFilters();
   }
 
+  // ---------- Status dropdown ----------
   toggleStatusDropdown(): void {
-    this.isStatusOpen.update((v) => !v);
+    this.isStatusOpen.update((open) => !open);
   }
 
-  selectStatus(val: string): void {
+  selectStatus(value: string): void {
     this.isStatusOpen.set(false);
-    this.onStatusChange(val);
+    this.onStatusChange(value);
   }
 
+  /** Close the dropdown on a click outside it. */
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    if (!this.isStatusOpen()) {
-      return;
-    }
-    const target = event.target as HTMLElement | null;
-    if (!target?.closest('.status-dropdown')) {
+    if (this.isStatusOpen() && !(event.target as HTMLElement).closest('.status-dropdown')) {
       this.isStatusOpen.set(false);
     }
   }
@@ -187,46 +160,17 @@ export class OrderPage implements OnInit, AfterViewInit {
     this.isStatusOpen.set(false);
   }
 
-  clearSearch(): void {
-    this.searchQuery.set('');
-    this.applyFilterToDataSource();
-  }
-
+  // ---------- Row actions ----------
   viewOrderDetails(orderId: string): void {
     this.router.navigate(['/orders', orderId]);
   }
 
-  getStatusClass(status: OrderStatus): string {
-    switch (status) {
-      case 'Packing':
-        return 'status-packing';
-      case 'Delivered':
-        return 'status-delivered';
-      case 'Shipped':
-        return 'status-shipped';
-      case 'Processing':
-        return 'status-processing';
-      case 'Pending':
-        return 'status-pending';
-      case 'Cancelled':
-        return 'status-cancelled';
-      default:
-        return '';
-    }
+  // ---------- Badge colors ('Shipped' -> 'status-shipped', 'Paid' -> 'payment-paid') ----------
+  getStatusClass(status: string): string {
+    return 'status-' + status.toLowerCase();
   }
 
   getPaymentClass(status: string): string {
-    switch (status) {
-      case 'Paid':
-        return 'payment-paid';
-      case 'Pending':
-        return 'payment-pending';
-      case 'Refunded':
-        return 'payment-refunded';
-      case 'Failed':
-        return 'payment-failed';
-      default:
-        return '';
-    }
+    return 'payment-' + status.toLowerCase();
   }
 }

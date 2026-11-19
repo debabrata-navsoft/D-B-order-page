@@ -1,37 +1,22 @@
-import { Component, HostListener, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-import { Order, OrderItem } from '../models/order.model';
+import { BoxDimensions, Order, OrderItem } from '../models/order.model';
 import { OrderService } from '../services/order.service';
 
-type DimKey = 'length' | 'width' | 'height' | 'weight';
+type DimKey = keyof BoxDimensions;
 
-interface DimensionField {
-  key: DimKey;
-  label: string;
-  placeholder: string;
-  error: string;
-}
+const CUSTOM_BOX = 'Custom Box';
 
-const emptyDims = (): Record<DimKey, number | null> => ({
-  length: null,
-  width: null,
-  height: null,
-  weight: null
-});
+const EMPTY_DIMS: BoxDimensions = { length: null, width: null, height: null, weight: null };
 
-const untouchedDims = (): Record<DimKey, boolean> => ({
-  length: false,
-  width: false,
-  height: false,
-  weight: false
-});
-
-const BOX_PRESETS: Record<string, Record<DimKey, number>> = {
+/** Standard box sizes (Custom Box has none — the user types them). */
+const BOX_PRESETS: Record<string, BoxDimensions> = {
   'Poly Bag - Small': { length: 10, width: 8, height: 2, weight: 1.5 },
   'Poly Bag - Medium': { length: 12, width: 10, height: 3, weight: 2.5 },
   'Poly Bag - Large': { length: 15, width: 12, height: 4, weight: 4 },
@@ -39,16 +24,18 @@ const BOX_PRESETS: Record<string, Record<DimKey, number>> = {
   'Large Feed Box': { length: 36, width: 24, height: 18, weight: 50 }
 };
 
+/** Same value for all four dimension keys, e.g. all touched / untouched. */
+const allDims = (value: boolean): Record<DimKey, boolean> => ({
+  length: value,
+  width: value,
+  height: value,
+  weight: value
+});
+
 @Component({
   selector: 'app-order-details-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    FormsModule,
-    MatIconModule,
-    MatProgressSpinnerModule
-  ],
+  imports: [CommonModule, FormsModule, MatIconModule, MatProgressSpinnerModule],
   templateUrl: './order-details-page.html',
   styleUrl: './order-details-page.css'
 })
@@ -56,68 +43,58 @@ export class OrderDetailsPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly orderService = inject(OrderService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  readonly order = signal<Order | undefined>(undefined);
-  readonly allOrderIds = signal<string[]>([]);
-  readonly currentOrderIndex = computed(() => {
+  // ---------- Page state ----------
+  readonly order = signal<Order | null>(null);
+  readonly orderIds = signal<string[]>([]);
+  readonly isLoading = signal(true);
+  readonly errorMessage = signal('');
+  readonly isSaving = signal(false);
+  readonly toastMessage = signal('');
+  private toastTimer?: ReturnType<typeof setTimeout>;
+
+  // ---------- Previous / Next ----------
+  readonly currentIndex = computed(() => {
     const o = this.order();
-    return o ? this.allOrderIds().findIndex((id) => id === o.id || id === o.orderNumber) : -1;
+    return o ? this.orderIds().indexOf(o.id) : -1;
   });
-  readonly hasPrev = computed(() => this.currentOrderIndex() > 0);
+  readonly hasPrev = computed(() => this.currentIndex() > 0);
   readonly hasNext = computed(() => {
-    const idx = this.currentOrderIndex();
-    return idx !== -1 && idx < this.allOrderIds().length - 1;
+    const i = this.currentIndex();
+    return i !== -1 && i < this.orderIds().length - 1;
   });
-  readonly isLoading = signal<boolean>(true);
-  readonly errorMessage = signal<string>('');
-  readonly isSaving = signal<boolean>(false);
 
-  // Box Selection & Dimensions
-  readonly boxOptions: string[] = [
-    'Custom Box',
-    'Poly Bag - Small',
-    'Poly Bag - Extra Large',
-    'Poly Bag - Large',
-    'Poly Bag - Medium',
-    'Large Feed Box'
-  ];
-  readonly selectedBox = signal<string>('Custom Box');
-  readonly isBoxDropdownOpen = signal<boolean>(false);
+  // ---------- Select Box + dimensions ----------
+  readonly boxOptions = [CUSTOM_BOX, ...Object.keys(BOX_PRESETS)];
+  readonly selectedBox = signal(CUSTOM_BOX);
+  readonly isBoxDropdownOpen = signal(false);
 
-  // Box dimension fields (all mandatory, must be > 0)
-  readonly dimensionFields: DimensionField[] = [
-    { key: 'length', label: 'Length (in)', placeholder: 'Enter length', error: 'Length must be greater than 0' },
-    { key: 'width', label: 'Width (in)', placeholder: 'Enter width', error: 'Width must be greater than 0' },
-    { key: 'height', label: 'Height (in)', placeholder: 'Enter height', error: 'Height must be greater than 0' },
-    { key: 'weight', label: 'Weight (lbs)', placeholder: 'Enter weight', error: 'Weight must be greater than 0' }
+  // Placeholder = "Enter <key>", error = "<Name> must be greater than 0"
+  readonly dimensionFields: { key: DimKey; name: string; unit: string }[] = [
+    { key: 'length', name: 'Length', unit: 'in' },
+    { key: 'width', name: 'Width', unit: 'in' },
+    { key: 'height', name: 'Height', unit: 'in' },
+    { key: 'weight', name: 'Weight', unit: 'lbs' }
   ];
 
-  readonly dims = signal<Record<DimKey, number | null>>(emptyDims());
-  readonly touched = signal<Record<DimKey, boolean>>(untouchedDims());
-
-  // Set after a SHIP attempt so every invalid field shows its error
-  readonly submitted = signal<boolean>(false);
+  readonly dims = signal<BoxDimensions>({ ...EMPTY_DIMS });
+  readonly touched = signal(allDims(false));
+  readonly submitted = signal(false); // true after a SHIP attempt
 
   readonly hasDimErrors = computed(() =>
     this.dimensionFields.some((f) => this.isDimInvalid(f.key))
   );
-
-  // True when errors are visible and shipping actions should look disabled
   readonly showValidationErrors = computed(() => this.submitted() && this.hasDimErrors());
 
-  // Active Toast / Feedback
-  readonly toastMessage = signal<string>('');
-
   ngOnInit(): void {
-    // Load all orders list to support Prev / Next navigation
-    this.orderService.getOrders().subscribe({
-      next: (orders) => {
-        const ids = orders.map((o) => o.id || o.orderNumber);
-        this.allOrderIds.set(ids);
-      }
+    // All order ids, for the < and > buttons
+    this.orderService.getOrders().subscribe((orders) => {
+      this.orderIds.set(orders.map((o) => o.id));
     });
 
-    this.route.paramMap.subscribe((params) => {
+    // Reload whenever the :id in the URL changes (unsubscribes on destroy)
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const id = params.get('id');
       if (id) {
         this.loadOrder(id);
@@ -131,27 +108,8 @@ export class OrderDetailsPage implements OnInit {
 
     this.orderService.getOrderById(id).subscribe({
       next: (order) => {
-        if (order) {
-          order.items?.forEach((item) => {
-            item.selected = false;
-            item.qtyShipping = undefined;
-          });
-          this.order.set(order);
-          const box = order.selectedBox || 'Custom Box';
-          this.selectedBox.set(box);
-
-          if (box !== 'Custom Box' && order.boxDimensions) {
-            this.dims.set({ ...order.boxDimensions });
-            this.touched.set(untouchedDims());
-          } else {
-            this.dims.set(emptyDims());
-            this.touched.set({ length: true, width: true, height: true, weight: true });
-          }
-
-          this.submitted.set(false);
-        } else {
-          this.errorMessage.set(`Order #${id} not found.`);
-        }
+        this.order.set(this.resetItemState(order));
+        this.applyBox(order.selectedBox || CUSTOM_BOX, order.boxDimensions);
         this.isLoading.set(false);
       },
       error: () => {
@@ -161,21 +119,29 @@ export class OrderDetailsPage implements OnInit {
     });
   }
 
-  statusClass(status: string | undefined): string {
-    return status ? `status-${status.toLowerCase()}` : '';
+  /** Items start unticked with an empty Qty Shipping (both are screen-only). */
+  private resetItemState(order: Order): Order {
+    for (const item of order.items) {
+      item.selected = false;
+      item.qtyShipping = undefined;
+    }
+    return order;
   }
 
+  // ---------- Status pill ----------
+  statusClass(status: string): string {
+    return 'status-' + status.toLowerCase();
+  }
+
+  // ---------- Select Box dropdown ----------
   toggleBoxDropdown(): void {
-    this.isBoxDropdownOpen.update((v) => !v);
+    this.isBoxDropdownOpen.update((open) => !open);
   }
 
+  /** Close the dropdown on a click outside it. */
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    if (!this.isBoxDropdownOpen()) {
-      return;
-    }
-    const target = event.target as HTMLElement | null;
-    if (!target?.closest('.box-select-container')) {
+    if (this.isBoxDropdownOpen() && !(event.target as HTMLElement).closest('.box-select-container')) {
       this.isBoxDropdownOpen.set(false);
     }
   }
@@ -186,56 +152,48 @@ export class OrderDetailsPage implements OnInit {
   }
 
   selectBoxOption(option: string): void {
-    this.selectedBox.set(option);
     this.isBoxDropdownOpen.set(false);
-
-    if (option === 'Custom Box') {
-      this.dims.set(emptyDims());
-      this.touched.set({ length: true, width: true, height: true, weight: true });
-      return;
-    }
-
-    const preset = BOX_PRESETS[option];
-    if (preset) {
-      this.dims.set({ ...preset });
-    }
+    this.applyBox(option);
   }
 
+  /**
+   * Set the box and its dimensions.
+   * - Standard box: use the saved size, or the preset size.
+   * - Custom Box: empty fields with the red "required" errors shown.
+   */
+  private applyBox(box: string, saved?: BoxDimensions): void {
+    this.selectedBox.set(box);
+    this.submitted.set(false);
+
+    const size = box === CUSTOM_BOX ? null : saved ?? BOX_PRESETS[box];
+    this.dims.set(size ? { ...size } : { ...EMPTY_DIMS });
+    this.touched.set(allDims(!size));
+  }
+
+  // ---------- Dimension inputs ----------
   setDim(key: DimKey, value: number | null): void {
     this.dims.update((d) => ({ ...d, [key]: value }));
   }
+
   markTouched(key: DimKey): void {
     this.touched.update((t) => ({ ...t, [key]: true }));
   }
 
   isDimInvalid(key: DimKey): boolean {
-    const v = this.dims()[key];
-    return v === null || v === undefined || !(Number(v) > 0);
+    const value = this.dims()[key];
+    return value === null || !(value > 0);
   }
 
   showDimError(key: DimKey): boolean {
     return (this.touched()[key] || this.submitted()) && this.isDimInvalid(key);
   }
 
+  // ---------- Items table ----------
   toggleItemSelection(item: OrderItem): void {
     item.selected = !item.selected;
     if (!item.selected) {
-      item.qtyShipping = undefined;
+      item.qtyShipping = undefined; // unticked items don't ship
     }
-  }
-
-  setQtyShipping(item: OrderItem, input: HTMLInputElement): void {
-    if (input.value === '') {
-      item.qtyShipping = undefined;
-      return;
-    }
-    const max = this.maxQtyShipping(item);
-    let value = Number(input.value);
-    if (value > max) {
-      value = max;
-      input.value = String(max);
-    }
-    item.qtyShipping = value;
   }
 
   qtyPicked(item: OrderItem): number {
@@ -243,74 +201,83 @@ export class OrderDetailsPage implements OnInit {
   }
 
   qtyShipped(item: OrderItem): number {
-    return item.qtyShipped || 0;
+    return item.qtyShipped ?? 0;
   }
 
+  /** Max that can still ship = picked − already shipped. */
   maxQtyShipping(item: OrderItem): number {
     return Math.max(this.qtyPicked(item) - this.qtyShipped(item), 0);
   }
 
+  /** Store Qty Shipping, capped at the max. */
+  setQtyShipping(item: OrderItem, input: HTMLInputElement): void {
+    if (input.value === '') {
+      item.qtyShipping = undefined;
+      return;
+    }
+    const max = this.maxQtyShipping(item);
+    const value = Math.min(Number(input.value), max);
+    if (value === max) {
+      input.value = String(max);
+    }
+    item.qtyShipping = value;
+  }
+
   private isQtyShippingValid(item: OrderItem): boolean {
-    const q = item.qtyShipping;
-    return q !== undefined && Number.isInteger(q) && q > 0 && q <= this.maxQtyShipping(item);
+    const qty = item.qtyShipping ?? 0;
+    return Number.isInteger(qty) && qty > 0 && qty <= this.maxQtyShipping(item);
   }
 
-  canShip(): boolean {
-    if (this.hasDimErrors()) {
-      return false;
-    }
-
-    const filled = (this.order()?.items ?? []).filter(
-      (i) => i.selected === true && i.qtyShipping !== undefined
+  /** Ticked items that have a Qty Shipping entered. */
+  private itemsToShip(): OrderItem[] {
+    return (this.order()?.items ?? []).filter(
+      (item) => item.selected && item.qtyShipping !== undefined
     );
-    return filled.length > 0 && filled.every((i) => this.isQtyShippingValid(i));
   }
 
+  /** SHIP needs valid dimensions and at least one valid item quantity. */
+  canShip(): boolean {
+    const items = this.itemsToShip();
+    return (
+      !this.hasDimErrors() &&
+      items.length > 0 &&
+      items.every((item) => this.isQtyShippingValid(item))
+    );
+  }
+
+  // ---------- SHIP ----------
   onShip(): void {
-    this.submitted.set(true);
-    if (this.hasDimErrors()) {
-      this.showToast('Please correct box dimensions before shipping.');
-      return;
-    }
-    if (!this.canShip()) {
-      this.showToast('Please enter a valid Qty Shipping for the selected items.');
-      return;
-    }
-
     const order = this.order();
-    if (!order || this.isSaving()) {
+    this.submitted.set(true);
+    if (!order || this.isSaving() || !this.canShip()) {
       return;
     }
 
-    let total = 0;
-    const items = order.items.map((item) => {
-      const { qtyShipping, ...rest } = item;
-      if (item.selected === true && qtyShipping) {
-        total += qtyShipping;
-        return { ...rest, qtyShipped: this.qtyShipped(item) + qtyShipping };
-      }
-      return rest;
-    });
+    const totalShipped = this.itemsToShip().reduce((sum, item) => sum + (item.qtyShipping ?? 0), 0);
 
-    const changes = {
-      items,
-      selectedBox: this.selectedBox(),
-      boxDimensions: { ...this.dims() }
-    };
+    // Add Qty Shipping to Qty Shipped; don't store the screen-only fields
+    const items = order.items.map(({ selected, qtyShipping, ...item }) => ({
+      ...item,
+      qtyShipped: this.qtyShipped(item) + (selected ? qtyShipping ?? 0 : 0)
+    }));
+
     this.isSaving.set(true);
-    this.orderService.updateOrder(order.id || order.orderNumber, changes).subscribe({
-      next: (saved) => {
-        this.order.set({ ...order, ...saved, items: saved.items ?? items });
-        this.isSaving.set(false);
-        this.showToast(`Shipped ${total} item${total === 1 ? '' : 's'} successfully!`);
-      },
-      error: () => {
-        this.isSaving.set(false);
-        this.showToast('Failed to save shipment. Please try again.');
-      }
-    });
+    this.orderService
+      .updateOrder(order.id, { items, selectedBox: this.selectedBox(), boxDimensions: this.dims() })
+      .subscribe({
+        next: (saved) => {
+          this.order.set(this.resetItemState(saved));
+          this.isSaving.set(false);
+          this.showToast(`Shipped ${totalShipped} item(s) successfully!`);
+        },
+        error: () => {
+          this.isSaving.set(false);
+          this.showToast('Failed to save shipment. Please try again.');
+        }
+      });
   }
 
+  // ---------- Other buttons ----------
   onPackingSlip(): void {
     this.showToast('Generating Packing Slip...');
     window.print();
@@ -324,21 +291,16 @@ export class OrderDetailsPage implements OnInit {
     this.showToast('Reprinting shipping label...');
   }
 
-  onRefundOrder(): void {
-    if (confirm('Initiate refund for this order?')) {
-      this.showToast('Refund processed.');
-    }
-  }
-
+  // ---------- Navigation ----------
   prevOrder(): void {
     if (this.hasPrev()) {
-      this.router.navigate(['/orders', this.allOrderIds()[this.currentOrderIndex() - 1]]);
+      this.router.navigate(['/orders', this.orderIds()[this.currentIndex() - 1]]);
     }
   }
 
   nextOrder(): void {
     if (this.hasNext()) {
-      this.router.navigate(['/orders', this.allOrderIds()[this.currentOrderIndex() + 1]]);
+      this.router.navigate(['/orders', this.orderIds()[this.currentIndex() + 1]]);
     }
   }
 
@@ -346,10 +308,9 @@ export class OrderDetailsPage implements OnInit {
     this.router.navigate(['/orders']);
   }
 
-  showToast(msg: string): void {
-    this.toastMessage.set(msg);
-    setTimeout(() => {
-      this.toastMessage.set('');
-    }, 3000);
-  }
+  // ---------- Toast ----------
+  showToast(message: string): void {
+    clearTimeout(this.toastTimer); // a new message restarts the 3s timer
+    this.toastMessage.set(message);
+    this.toastTimer = setTimeout(() => this.toastMessage.set(''), 3000);  }
 }

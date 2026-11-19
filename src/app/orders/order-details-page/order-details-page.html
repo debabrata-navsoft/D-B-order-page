@@ -226,16 +226,16 @@
                 step="any"
                 class="dim-input"
                 [id]="'dim-' + f.key"
-                [placeholder]="f.placeholder"
+                [placeholder]="'Enter ' + f.key"
                 required
                 [ngModel]="dims()[f.key]"
                 (ngModelChange)="setDim(f.key, $event)"
                 (blur)="markTouched(f.key)"
               />
-              <label class="dim-label" [for]="'dim-' + f.key">{{ f.label }} *</label>
+              <label class="dim-label" [for]="'dim-' + f.key">{{ f.name }} ({{ f.unit }}) *</label>
             </div>
             @if (showDimError(f.key)) {
-              <span class="dim-error-msg">{{ f.error }}</span>
+              <span class="dim-error-msg">{{ f.name }} must be greater than 0</span>
             }
           </div>
         }

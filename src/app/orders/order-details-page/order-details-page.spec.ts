@@ -11,8 +11,7 @@ describe('OrderDetailsPage', () => {
   const mockOrderService = {
     getOrders: () => of([]),
     getOrderById: () => of(undefined),
-    updateOrderStatus: () => of({} as any),
-    deleteOrder: () => of(void 0),
+    updateOrder: () => of({} as any),
   };
 
   beforeEach(async () => {

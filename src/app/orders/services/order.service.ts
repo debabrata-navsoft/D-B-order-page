@@ -1,11 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Order, OrderStatus } from '../models/order.model';
+import { Order } from '../models/order.model';
 
-@Injectable({
-  providedIn: 'root',
-})
+/** Talks to json-server (backend/db.json). */
+@Injectable({ providedIn: 'root' })
 export class OrderService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = 'http://localhost:3000/orders';
@@ -15,19 +14,15 @@ export class OrderService {
   }
 
   getOrderById(id: string): Observable<Order> {
-    return this.http.get<Order>(`${this.apiUrl}/${id}`);
+    return this.http.get<Order>(this.orderUrl(id));
   }
 
-  updateOrderStatus(id: string, status: OrderStatus): Observable<Order> {
-    return this.http.patch<Order>(`${this.apiUrl}/${id}`, { status });
-  }
-
-  /** Partially update an order (e.g. items after shipping) in the JSON DB. */
+  /** PATCH: only the fields in `changes` are updated. */
   updateOrder(id: string, changes: Partial<Order>): Observable<Order> {
-    return this.http.patch<Order>(`${this.apiUrl}/${id}`, changes);
+    return this.http.patch<Order>(this.orderUrl(id), changes);
   }
 
-  deleteOrder(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  private orderUrl(id: string): string {
+    return `${this.apiUrl}/${encodeURIComponent(id)}`;
   }
 }
