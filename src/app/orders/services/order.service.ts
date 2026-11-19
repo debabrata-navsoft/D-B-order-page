@@ -22,6 +22,11 @@ export class OrderService {
     return this.http.patch<Order>(`${this.apiUrl}/${id}`, { status });
   }
 
+  /** Partially update an order (e.g. items after shipping) in the JSON DB. */
+  updateOrder(id: string, changes: Partial<Order>): Observable<Order> {
+    return this.http.patch<Order>(`${this.apiUrl}/${id}`, changes);
+  }
+
   deleteOrder(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }

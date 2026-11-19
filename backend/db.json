@@ -46,9 +46,8 @@
           "sku": "2008756",
           "qtyOrdered": 7,
           "qtyPicked": 5,
-          "qtyShipped": 0,
+          "qtyShipped": 1,
           "labelPrintedFor": 3,
-          "qtyShipping": 3,
           "quantity": 7,
           "price": 45.99
         }
@@ -80,7 +79,7 @@
       },
       "selectedBox": "Custom Box",
       "itemsCount": 4,
-      "totalAmount": 154.0,
+      "totalAmount": 154,
       "paymentStatus": "Paid",
       "paymentMethod": "Credit Card",
       "canVoid": false,
@@ -184,11 +183,11 @@
         "length": 36,
         "width": 24,
         "height": 18,
-        "weight": 85.0
+        "weight": 85
       },
       "selectedBox": "Large Feed Box",
       "itemsCount": 8,
-      "totalAmount": 2840.0,
+      "totalAmount": 2840,
       "paymentStatus": "Paid",
       "paymentMethod": "Credit Card",
       "canVoid": false,
@@ -212,7 +211,7 @@
           "labelPrintedFor": 8,
           "qtyShipping": 0,
           "quantity": 8,
-          "price": 355.0
+          "price": 355
         }
       ]
     }

@@ -60,6 +60,7 @@ export class OrderDetailsPage implements OnInit {
   readonly currentOrderIndex = signal<number>(0);
   readonly isLoading = signal<boolean>(true);
   readonly errorMessage = signal<string>('');
+  readonly isSaving = signal<boolean>(false);
 
   // Box Selection & Dimensions
   readonly boxOptions: string[] = [
@@ -216,8 +217,19 @@ export class OrderDetailsPage implements OnInit {
     item.selected = item.selected === false;
   }
 
-  setQtyShipping(item: OrderItem, raw: string): void {
-    item.qtyShipping = raw === '' ? undefined : Number(raw);
+  /** Store Qty Shipping, capping it at the max (picked − shipped). */
+  setQtyShipping(item: OrderItem, input: HTMLInputElement): void {
+    if (input.value === '') {
+      item.qtyShipping = undefined;
+      return;
+    }
+    const max = this.maxQtyShipping(item);
+    let value = Number(input.value);
+    if (value > max) {
+      value = max;
+      input.value = String(max);
+    }
+    item.qtyShipping = value;
   }
 
   qtyPicked(item: OrderItem): number {
@@ -231,10 +243,6 @@ export class OrderDetailsPage implements OnInit {
   /** Max that can still ship = picked − already shipped. */
   maxQtyShipping(item: OrderItem): number {
     return Math.max(this.qtyPicked(item) - this.qtyShipped(item), 0);
-  }
-
-  isQtyShippingOver(item: OrderItem): boolean {
-    return item.qtyShipping !== undefined && item.qtyShipping > this.maxQtyShipping(item);
   }
 
   private isQtyShippingValid(item: OrderItem): boolean {
@@ -262,18 +270,35 @@ export class OrderDetailsPage implements OnInit {
       return;
     }
 
-    // Add shipped quantity to Qty Shipped, then clear the input
-    let total = 0;
-    for (const item of this.order()?.items ?? []) {
-      if (item.selected !== false && item.qtyShipping) {
-        item.qtyShipped = this.qtyShipped(item) + item.qtyShipping;
-        total += item.qtyShipping;
-        item.qtyShipping = undefined;
-      }
+    const order = this.order();
+    if (!order || this.isSaving()) {
+      return;
     }
-    this.order.update((o) => (o ? { ...o, items: [...o.items] } : o));
 
-    this.showToast(`Shipped ${total} item${total === 1 ? '' : 's'} successfully!`);
+    // Add shipped quantity to Qty Shipped (qtyShipping is UI-only, not stored)
+    let total = 0;
+    const items = order.items.map((item) => {
+      const { qtyShipping, ...rest } = item;
+      if (item.selected !== false && qtyShipping) {
+        total += qtyShipping;
+        return { ...rest, qtyShipped: this.qtyShipped(item) + qtyShipping };
+      }
+      return rest;
+    });
+
+    // Save to the JSON DB so the new Qty Shipped survives a refresh
+    this.isSaving.set(true);
+    this.orderService.updateOrder(order.id || order.orderNumber, { items }).subscribe({
+      next: (saved) => {
+        this.order.set({ ...order, ...saved, items: saved.items ?? items });
+        this.isSaving.set(false);
+        this.showToast(`Shipped ${total} item${total === 1 ? '' : 's'} successfully!`);
+      },
+      error: () => {
+        this.isSaving.set(false);
+        this.showToast('Failed to save shipment. Please try again.');
+      }
+    });
   }
 
   onPackingSlip(): void {
@@ -287,12 +312,6 @@ export class OrderDetailsPage implements OnInit {
 
   onReprintLabel(): void {
     this.showToast('Reprinting shipping label...');
-  }
-
-  onVoidOrder(): void {
-    if (confirm('Are you sure you want to void this order?')) {
-      this.showToast('Order voided.');
-    }
   }
 
   onRefundOrder(): void {

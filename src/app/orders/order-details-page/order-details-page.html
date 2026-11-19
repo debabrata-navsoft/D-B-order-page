@@ -286,16 +286,12 @@
                   <input
                     type="number"
                     class="qty-shipping-input"
-                    [class.has-error]="isQtyShippingOver(item)"
                     min="1"
                     [max]="maxQtyShipping(item)"
                     [disabled]="maxQtyShipping(item) === 0"
                     [value]="item.qtyShipping ?? ''"
-                    (input)="setQtyShipping(item, $any($event.target).value)"
+                    (input)="setQtyShipping(item, $any($event.target))"
                   />
-                  @if (isQtyShippingOver(item)) {
-                    <span class="qty-error-msg">Max {{ maxQtyShipping(item) }} allowed</span>
-                  }
                 </td>
               </tr>
             }
@@ -320,14 +316,9 @@
 
     <!-- Bottom Action Bar (outside the card, as in reference) -->
     <div class="bottom-action-bar">
-      <button class="btn-void-order" (click)="onVoidOrder()">
-        <mat-icon class="void-x-icon">cancel</mat-icon>
-        <span>Void Order</span>
-      </button>
-
       <button
         class="btn-ship"
-        [disabled]="!canShip()"
+        [disabled]="!canShip() || isSaving()"
         (click)="onShip()"
       >
         SHIP
