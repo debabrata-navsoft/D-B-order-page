@@ -132,7 +132,10 @@ export class OrderDetailsPage implements OnInit {
     this.orderService.getOrderById(id).subscribe({
       next: (order) => {
         if (order) {
-          order.items?.forEach((item) => (item.qtyShipping = undefined));
+          order.items?.forEach((item) => {
+            item.selected = false;
+            item.qtyShipping = undefined;
+          });
           this.order.set(order);
           const box = order.selectedBox || 'Custom Box';
           this.selectedBox.set(box);
@@ -215,7 +218,10 @@ export class OrderDetailsPage implements OnInit {
   }
 
   toggleItemSelection(item: OrderItem): void {
-    item.selected = item.selected === false;
+    item.selected = !item.selected;
+    if (!item.selected) {
+      item.qtyShipping = undefined;
+    }
   }
 
   setQtyShipping(item: OrderItem, input: HTMLInputElement): void {
@@ -255,7 +261,7 @@ export class OrderDetailsPage implements OnInit {
     }
 
     const filled = (this.order()?.items ?? []).filter(
-      (i) => i.selected !== false && i.qtyShipping !== undefined
+      (i) => i.selected === true && i.qtyShipping !== undefined
     );
     return filled.length > 0 && filled.every((i) => this.isQtyShippingValid(i));
   }
@@ -279,7 +285,7 @@ export class OrderDetailsPage implements OnInit {
     let total = 0;
     const items = order.items.map((item) => {
       const { qtyShipping, ...rest } = item;
-      if (item.selected !== false && qtyShipping) {
+      if (item.selected === true && qtyShipping) {
         total += qtyShipping;
         return { ...rest, qtyShipped: this.qtyShipped(item) + qtyShipping };
       }

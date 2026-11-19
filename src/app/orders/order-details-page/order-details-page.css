@@ -614,7 +614,7 @@
 }
 
 .blue-checkbox:checked {
-  background-color: #c4c4c4;
+  background-color: #212121; /* black when ticked */
   box-shadow: none;
 }
 

@@ -266,7 +266,7 @@
                     <input
                       type="checkbox"
                       class="blue-checkbox"
-                      [checked]="item.selected !== false"
+                      [checked]="item.selected === true"
                       (change)="toggleItemSelection(item)"
                     />
                     <mat-icon class="check-icon">check</mat-icon>
@@ -288,7 +288,7 @@
                     class="qty-shipping-input"
                     min="1"
                     [max]="maxQtyShipping(item)"
-                    [disabled]="maxQtyShipping(item) === 0"
+                    [disabled]="!item.selected || maxQtyShipping(item) === 0"
                     [value]="item.qtyShipping ?? ''"
                     (input)="setQtyShipping(item, $any($event.target))"
                   />
