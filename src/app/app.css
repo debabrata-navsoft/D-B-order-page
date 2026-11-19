@@ -2,24 +2,24 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f2f2f2; /* Exact background sampled from reference design */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #e6e6e6; /* same page background as the order pages */
+  font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* ================= NAVBAR ================= */
 .navbar {
   background-color: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* same soft shadow as page cards */
 }
 
 .navbar-container {
-  max-width: 1680px; /* match order details page width */
+  max-width: 1680px; /* match page width */
   margin: 0 auto;
   padding: 0 8px;
-  height: 58px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -28,80 +28,90 @@
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   text-decoration: none;
   cursor: pointer;
 }
 
 .brand-logo {
-  width: 36px;
-  height: 36px;
-  background-color: #e68a00; /* Exact golden orange from reference design */
-  border-radius: 6px;
+  width: 38px;
+  height: 38px;
+  background-color: #f39c12; /* same orange as the order header icon */
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
+  flex-shrink: 0;
 }
 
 .brand-logo mat-icon {
-  font-size: 22px;
-  width: 22px;
-  height: 22px;
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
 }
 
 .brand-text {
   display: flex;
   flex-direction: column;
+  gap: 1px;
 }
 
 .brand-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
-  letter-spacing: -0.3px;
+  font-size: 17px;
+  font-weight: 500;
+  color: #000000;
   line-height: 1.2;
 }
 
 .brand-subtitle {
-  font-size: 11px;
-  color: #6b7280;
-  font-weight: 500;
+  font-size: 12px;
+  color: #757575;
+  font-weight: 400;
+  line-height: 1.2;
 }
 
 .navbar-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .nav-icon-btn {
-  color: #4b5563;
+  color: #555555;
 }
 
 .user-profile {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.user-profile:hover {
+  background-color: #eeeeee;
 }
 
 .avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: #e5e7eb;
-  color: #374151;
+  background-color: #e0e0e0;
+  color: #424242;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .user-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: #333333;
 }
 
 .main-content {

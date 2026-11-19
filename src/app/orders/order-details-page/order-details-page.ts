@@ -33,7 +33,9 @@ const untouchedDims = (): Record<DimKey, boolean> => ({
 
 const BOX_PRESETS: Record<string, Record<DimKey, number>> = {
   'Poly Bag - Small': { length: 10, width: 8, height: 2, weight: 1.5 },
+  'Poly Bag - Medium': { length: 12, width: 10, height: 3, weight: 2.5 },
   'Poly Bag - Large': { length: 15, width: 12, height: 4, weight: 4 },
+  'Poly Bag - Extra Large': { length: 20, width: 16, height: 5, weight: 6 },
   'Large Feed Box': { length: 36, width: 24, height: 18, weight: 50 }
 };
 
@@ -57,7 +59,16 @@ export class OrderDetailsPage implements OnInit {
 
   readonly order = signal<Order | undefined>(undefined);
   readonly allOrderIds = signal<string[]>([]);
-  readonly currentOrderIndex = signal<number>(0);
+  /** Position of the current order in the list (-1 until both are loaded). */
+  readonly currentOrderIndex = computed(() => {
+    const o = this.order();
+    return o ? this.allOrderIds().findIndex((id) => id === o.id || id === o.orderNumber) : -1;
+  });
+  readonly hasPrev = computed(() => this.currentOrderIndex() > 0);
+  readonly hasNext = computed(() => {
+    const idx = this.currentOrderIndex();
+    return idx !== -1 && idx < this.allOrderIds().length - 1;
+  });
   readonly isLoading = signal<boolean>(true);
   readonly errorMessage = signal<string>('');
   readonly isSaving = signal<boolean>(false);
@@ -138,13 +149,6 @@ export class OrderDetailsPage implements OnInit {
 
           // Fresh load: no errors until the user leaves a field or clicks SHIP
           this.submitted.set(false);
-
-          // Update index for pagination
-          const ids = this.allOrderIds();
-          const idx = ids.findIndex((item) => item === order.id || item === order.orderNumber);
-          if (idx !== -1) {
-            this.currentOrderIndex.set(idx);
-          }
         } else {
           this.errorMessage.set(`Order #${id} not found.`);
         }
@@ -155,6 +159,11 @@ export class OrderDetailsPage implements OnInit {
         this.isLoading.set(false);
       }
     });
+  }
+
+  /** CSS class for the status pill, e.g. 'Shipped' → 'status-shipped'. */
+  statusClass(status: string | undefined): string {
+    return status ? `status-${status.toLowerCase()}` : '';
   }
 
   toggleBoxDropdown(): void {
@@ -286,9 +295,14 @@ export class OrderDetailsPage implements OnInit {
       return rest;
     });
 
-    // Save to the JSON DB so the new Qty Shipped survives a refresh
+    // Save items + selected box + dimensions to the JSON DB so they survive a refresh
+    const changes = {
+      items,
+      selectedBox: this.selectedBox(),
+      boxDimensions: { ...this.dims() }
+    };
     this.isSaving.set(true);
-    this.orderService.updateOrder(order.id || order.orderNumber, { items }).subscribe({
+    this.orderService.updateOrder(order.id || order.orderNumber, changes).subscribe({
       next: (saved) => {
         this.order.set({ ...order, ...saved, items: saved.items ?? items });
         this.isSaving.set(false);
@@ -321,18 +335,14 @@ export class OrderDetailsPage implements OnInit {
   }
 
   prevOrder(): void {
-    const ids = this.allOrderIds();
-    const curr = this.currentOrderIndex();
-    if (curr > 0) {
-      this.router.navigate(['/orders', ids[curr - 1]]);
+    if (this.hasPrev()) {
+      this.router.navigate(['/orders', this.allOrderIds()[this.currentOrderIndex() - 1]]);
     }
   }
 
   nextOrder(): void {
-    const ids = this.allOrderIds();
-    const curr = this.currentOrderIndex();
-    if (curr < ids.length - 1) {
-      this.router.navigate(['/orders', ids[curr + 1]]);
+    if (this.hasNext()) {
+      this.router.navigate(['/orders', this.allOrderIds()[this.currentOrderIndex() + 1]]);
     }
   }
 

@@ -32,14 +32,14 @@
           <mat-icon class="order-store-icon" fontSet="material-symbols-outlined">table_chart</mat-icon>
         </div>
         <h1 class="order-number-heading">Order # {{ o.orderNumber }}</h1>
-        <span class="status-packing-pill">{{ o.status }}</span>
+        <span class="status-packing-pill" [ngClass]="statusClass(o.status)">{{ o.status }}</span>
       </div>
 
       <div class="top-nav-right">
-        <button class="nav-arrow-btn" (click)="prevOrder()" title="Previous Order">
+        <button class="nav-arrow-btn" [disabled]="!hasPrev()" (click)="prevOrder()" title="Previous Order">
           <mat-icon>chevron_left</mat-icon>
         </button>
-        <button class="nav-arrow-btn" (click)="nextOrder()" title="Next Order">
+        <button class="nav-arrow-btn" [disabled]="!hasNext()" (click)="nextOrder()" title="Next Order">
           <mat-icon>chevron_right</mat-icon>
         </button>
         <button class="nav-back-btn" (click)="backToOrders()">Back</button>
@@ -109,7 +109,7 @@
             <tr>
               <td class="col-label">Status</td>
               <td class="col-value">
-                <span class="status-packing-pill small-pill">{{ o.status }}</span>
+                <span class="status-packing-pill small-pill" [ngClass]="statusClass(o.status)">{{ o.status }}</span>
               </td>
             </tr>
             <tr>

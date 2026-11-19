@@ -33,21 +33,34 @@
       </div>
 
       <div class="filter-controls">
-        <div class="status-select-wrapper">
-          <label class="filter-label">Status Filter:</label>
-          <select
-            class="custom-select"
-            [ngModel]="selectedStatus()"
-            (ngModelChange)="onStatusChange($event)"
+        <!-- Status filter: custom dropdown (same style as Select Box on details page) -->
+        <div class="status-dropdown">
+          <div
+            class="status-trigger"
+            [class.open]="isStatusOpen()"
+            (click)="toggleStatusDropdown()"
           >
-            <option value="ALL">All Statuses</option>
-            <option value="Packing">Packing</option>
-            <option value="Processing">Processing</option>
-            <option value="Shipped">Shipped</option>
-            <option value="Delivered">Delivered</option>
-            <option value="Pending">Pending</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
+            <label class="floating-label">Status</label>
+            <span class="status-trigger-text">{{ selectedStatusLabel() }}</span>
+            <mat-icon class="status-caret" [class.open]="isStatusOpen()">arrow_drop_down</mat-icon>
+          </div>
+
+          @if (isStatusOpen()) {
+            <div class="status-menu">
+              @for (opt of statusOptions; track opt.value) {
+                <div
+                  class="status-option"
+                  [class.active]="selectedStatus() === opt.value"
+                  (click)="selectStatus(opt.value)"
+                >
+                  <span>{{ opt.label }}</span>
+                  @if (selectedStatus() === opt.value) {
+                    <mat-icon class="status-check">check</mat-icon>
+                  }
+                </div>
+              }
+            </div>
+          }
         </div>
       </div>
     </div>
@@ -80,9 +93,16 @@
           <td mat-cell *matCellDef="let order">
             <div class="customer-cell">
               <span class="customer-name">{{ order.customerName }}</span>
-              <span class="customer-email">{{ order.customerEmail }}</span>
               <span class="customer-location">{{ order.shippingAddress?.city || order.cityStateZip }}</span>
             </div>
+          </td>
+        </ng-container>
+
+        <!-- Email Column -->
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="customerEmail">Email</th>
+          <td mat-cell *matCellDef="let order">
+            <span class="customer-email">{{ order.customerEmail }}</span>
           </td>
         </ng-container>
 

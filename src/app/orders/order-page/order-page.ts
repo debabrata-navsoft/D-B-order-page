@@ -2,6 +2,7 @@ import {
   Component,
   OnInit,
   AfterViewInit,
+  HostListener,
   ViewChild,
   inject,
   signal,
@@ -50,6 +51,7 @@ export class OrderPage implements OnInit, AfterViewInit {
   readonly displayedColumns: string[] = [
     'orderNumber',
     'customer',
+    'email',
     'date',
     'items',
     'total',
@@ -64,6 +66,21 @@ export class OrderPage implements OnInit, AfterViewInit {
 
   readonly searchQuery = signal<string>('');
   readonly selectedStatus = signal<string>('ALL');
+
+  // Status filter dropdown
+  readonly statusOptions: { value: string; label: string }[] = [
+    { value: 'ALL', label: 'All Statuses' },
+    { value: 'Packing', label: 'Packing' },
+    { value: 'Processing', label: 'Processing' },
+    { value: 'Shipped', label: 'Shipped' },
+    { value: 'Delivered', label: 'Delivered' },
+    { value: 'Pending', label: 'Pending' },
+    { value: 'Cancelled', label: 'Cancelled' }
+  ];
+  readonly isStatusOpen = signal<boolean>(false);
+  readonly selectedStatusLabel = computed(
+    () => this.statusOptions.find((o) => o.value === this.selectedStatus())?.label ?? 'All Statuses'
+  );
 
   // Summary Metrics
   readonly totalOrdersCount = computed(() => this.allOrders().length);
@@ -143,6 +160,32 @@ export class OrderPage implements OnInit, AfterViewInit {
   onStatusChange(val: string): void {
     this.selectedStatus.set(val);
     this.applyFilterToDataSource();
+  }
+
+  toggleStatusDropdown(): void {
+    this.isStatusOpen.update((v) => !v);
+  }
+
+  selectStatus(val: string): void {
+    this.isStatusOpen.set(false);
+    this.onStatusChange(val);
+  }
+
+  /** Close the status dropdown when clicking outside it. */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.isStatusOpen()) {
+      return;
+    }
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest('.status-dropdown')) {
+      this.isStatusOpen.set(false);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.isStatusOpen.set(false);
   }
 
   clearSearch(): void {

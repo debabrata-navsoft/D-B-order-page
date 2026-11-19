@@ -76,6 +76,37 @@
   font-weight: 400;
 }
 
+/* Status colors — same as the orders list page (Packing uses the default above) */
+.status-packing-pill.status-shipped {
+  background-color: #e0f2fe;
+  color: #0284c7;
+  border-color: #7dd3fc;
+}
+
+.status-packing-pill.status-delivered {
+  background-color: #dcfce7;
+  color: #16a34a;
+  border-color: #86efac;
+}
+
+.status-packing-pill.status-processing {
+  background-color: #fef3c7;
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+.status-packing-pill.status-pending {
+  background-color: #ffedd5;
+  color: #ea580c;
+  border-color: #fed7aa;
+}
+
+.status-packing-pill.status-cancelled {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
 .top-nav-right {
   display: flex;
   align-items: center;
@@ -99,8 +130,15 @@
   padding: 0;
 }
 
-.nav-arrow-btn:hover {
+.nav-arrow-btn:hover:not(:disabled) {
   background-color: #eeeeee;
+}
+
+.nav-arrow-btn:disabled {
+  color: #c4c4c4;
+  border-color: #e0e0e0;
+  background-color: #fafafa;
+  cursor: not-allowed;
 }
 
 .nav-arrow-btn mat-icon {
