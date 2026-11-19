@@ -3,7 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Order } from '../models/order.model';
 
-/** Talks to json-server (backend/db.json). */
 @Injectable({ providedIn: 'root' })
 export class OrderService {
   private readonly http = inject(HttpClient);
@@ -17,7 +16,6 @@ export class OrderService {
     return this.http.get<Order>(this.orderUrl(id));
   }
 
-  /** PATCH: only the fields in `changes` are updated. */
   updateOrder(id: string, changes: Partial<Order>): Observable<Order> {
     return this.http.patch<Order>(this.orderUrl(id), changes);
   }

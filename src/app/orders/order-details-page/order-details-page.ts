@@ -156,11 +156,7 @@ export class OrderDetailsPage implements OnInit {
     this.applyBox(option);
   }
 
-  /**
-   * Set the box and its dimensions.
-   * - Standard box: use the saved size, or the preset size.
-   * - Custom Box: empty fields with the red "required" errors shown.
-   */
+ 
   private applyBox(box: string, saved?: BoxDimensions): void {
     this.selectedBox.set(box);
     this.submitted.set(false);
@@ -209,6 +205,12 @@ export class OrderDetailsPage implements OnInit {
     return Math.max(this.qtyPicked(item) - this.qtyShipped(item), 0);
   }
 
+  /** Item can't be shipped: order is Delivered/Cancelled, or nothing left to ship. */
+  isItemLocked(item: OrderItem): boolean {
+    const status = this.order()?.status;
+    return status === 'Delivered' || status === 'Cancelled' || this.maxQtyShipping(item) === 0;
+  }
+
   /** Store Qty Shipping, capped at the max. */
   setQtyShipping(item: OrderItem, input: HTMLInputElement): void {
     if (input.value === '') {
@@ -228,14 +230,11 @@ export class OrderDetailsPage implements OnInit {
     return Number.isInteger(qty) && qty > 0 && qty <= this.maxQtyShipping(item);
   }
 
-  /** Ticked items that have a Qty Shipping entered. */
+  /** All ticked items. */
   private itemsToShip(): OrderItem[] {
-    return (this.order()?.items ?? []).filter(
-      (item) => item.selected && item.qtyShipping !== undefined
-    );
+    return (this.order()?.items ?? []).filter((item) => item.selected);
   }
 
-  /** SHIP needs valid dimensions and at least one valid item quantity. */
   canShip(): boolean {
     const items = this.itemsToShip();
     return (
@@ -310,7 +309,7 @@ export class OrderDetailsPage implements OnInit {
 
   // ---------- Toast ----------
   showToast(message: string): void {
-    clearTimeout(this.toastTimer); // a new message restarts the 3s timer
+    clearTimeout(this.toastTimer);
     this.toastMessage.set(message);
     this.toastTimer = setTimeout(() => this.toastMessage.set(''), 3000);  }
 }

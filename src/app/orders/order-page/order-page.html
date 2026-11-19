@@ -28,7 +28,9 @@
           class="search-input"
         />
         @if (searchQuery()) {
-          <button (click)="clearSearch()" class="clear-btn" title="Clear search">✕</button>
+          <button (click)="clearSearch()" class="clear-btn" title="Clear search">
+            <mat-icon class="clear-icon">close</mat-icon>
+          </button>
         }
       </div>
 

@@ -19,10 +19,10 @@
       "shippingAddressText": "159 10TH AVENUE NORTH, ID, TWIN FALLS, US",
       "unreadMessages": 20,
       "boxDimensions": {
-        "length": 1,
-        "width": 2,
-        "height": 1,
-        "weight": 1
+        "length": 12,
+        "width": 5,
+        "height": 5,
+        "weight": 8
       },
       "selectedBox": "Custom Box",
       "itemsCount": 11,
@@ -45,7 +45,7 @@
           "sku": "2008756",
           "qtyOrdered": 7,
           "qtyPicked": 5,
-          "qtyShipped": 2,
+          "qtyShipped": 5,
           "labelPrintedFor": 3,
           "quantity": 7,
           "price": 45.99
@@ -57,8 +57,8 @@
           "sku": "2008811",
           "qtyOrdered": 3,
           "qtyPicked": 3,
-          "qtyShipped": 0,
-          "labelPrintedFor": 0,
+          "qtyShipped": 3,
+          "labelPrintedFor": 1,
           "quantity": 3,
           "price": 12.49
         },
@@ -67,11 +67,11 @@
           "productName": "Frisco Cat Litter Scoop with Holder",
           "name": "Frisco Cat Litter Scoop with Holder",
           "sku": "2008934",
-          "qtyOrdered": 1,
-          "qtyPicked": 0,
-          "qtyShipped": 0,
-          "labelPrintedFor": 0,
-          "quantity": 1,
+          "qtyOrdered": 8,
+          "qtyPicked": 4,
+          "qtyShipped": 1,
+          "labelPrintedFor": 4,
+          "quantity": 8,
           "price": 9.99
         }
       ]
@@ -95,12 +95,12 @@
       "shippingAddressText": "1312 NORTH HOMEDALE AVENUE, ID, CALDWELL, US",
       "unreadMessages": 0,
       "boxDimensions": {
-        "length": 28,
-        "width": 5,
-        "height": 26,
-        "weight": 16
+        "length": 12,
+        "width": 10,
+        "height": 3,
+        "weight": 2.5
       },
-      "selectedBox": "Custom Box",
+      "selectedBox": "Poly Bag - Medium",
       "itemsCount": 6,
       "totalAmount": 183.98,
       "paymentStatus": "Paid",
@@ -116,26 +116,24 @@
       "items": [
         {
           "id": 1,
-          "selected": true,
           "productName": "Purina Pro Plan Adult Large Breed Dog Food 34 lb",
           "name": "Purina Pro Plan Adult Large Breed Dog Food 34 lb",
           "sku": "2019345",
           "qtyOrdered": 4,
           "qtyPicked": 4,
-          "qtyShipped": 3,
+          "qtyShipped": 4,
           "labelPrintedFor": 0,
           "quantity": 4,
           "price": 38.5
         },
         {
           "id": 2,
-          "selected": true,
           "productName": "KONG Classic Dog Toy Large",
           "name": "KONG Classic Dog Toy Large",
           "sku": "2019502",
           "qtyOrdered": 2,
           "qtyPicked": 2,
-          "qtyShipped": 0,
+          "qtyShipped": 2,
           "labelPrintedFor": 0,
           "quantity": 2,
           "price": 14.99
