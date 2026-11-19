@@ -171,7 +171,6 @@ export class OrderPage implements OnInit, AfterViewInit {
     this.onStatusChange(val);
   }
 
-  /** Close the status dropdown when clicking outside it. */
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     if (!this.isStatusOpen()) {

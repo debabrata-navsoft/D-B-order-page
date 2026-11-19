@@ -59,7 +59,6 @@ export class OrderDetailsPage implements OnInit {
 
   readonly order = signal<Order | undefined>(undefined);
   readonly allOrderIds = signal<string[]>([]);
-  /** Position of the current order in the list (-1 until both are loaded). */
   readonly currentOrderIndex = computed(() => {
     const o = this.order();
     return o ? this.allOrderIds().findIndex((id) => id === o.id || id === o.orderNumber) : -1;
@@ -133,21 +132,19 @@ export class OrderDetailsPage implements OnInit {
     this.orderService.getOrderById(id).subscribe({
       next: (order) => {
         if (order) {
-          // Qty Shipping starts empty — the user enters it
           order.items?.forEach((item) => (item.qtyShipping = undefined));
           this.order.set(order);
           const box = order.selectedBox || 'Custom Box';
           this.selectedBox.set(box);
-          this.touched.set(untouchedDims());
 
-          // Custom Box starts empty — the user must enter dimensions
           if (box !== 'Custom Box' && order.boxDimensions) {
             this.dims.set({ ...order.boxDimensions });
+            this.touched.set(untouchedDims());
           } else {
             this.dims.set(emptyDims());
+            this.touched.set({ length: true, width: true, height: true, weight: true });
           }
 
-          // Fresh load: no errors until the user leaves a field or clicks SHIP
           this.submitted.set(false);
         } else {
           this.errorMessage.set(`Order #${id} not found.`);
@@ -161,7 +158,6 @@ export class OrderDetailsPage implements OnInit {
     });
   }
 
-  /** CSS class for the status pill, e.g. 'Shipped' → 'status-shipped'. */
   statusClass(status: string | undefined): string {
     return status ? `status-${status.toLowerCase()}` : '';
   }
@@ -170,7 +166,6 @@ export class OrderDetailsPage implements OnInit {
     this.isBoxDropdownOpen.update((v) => !v);
   }
 
-  /** Close the box dropdown when clicking anywhere outside it. */
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     if (!this.isBoxDropdownOpen()) {
@@ -191,15 +186,12 @@ export class OrderDetailsPage implements OnInit {
     this.selectedBox.set(option);
     this.isBoxDropdownOpen.set(false);
 
-    // Custom Box: clear the fields so the user enters their own values
     if (option === 'Custom Box') {
       this.dims.set(emptyDims());
-      this.touched.set(untouchedDims());
-      this.submitted.set(false);
+      this.touched.set({ length: true, width: true, height: true, weight: true });
       return;
     }
 
-    // Auto set dimensions based on standard packaging
     const preset = BOX_PRESETS[option];
     if (preset) {
       this.dims.set({ ...preset });
@@ -226,7 +218,6 @@ export class OrderDetailsPage implements OnInit {
     item.selected = item.selected === false;
   }
 
-  /** Store Qty Shipping, capping it at the max (picked − shipped). */
   setQtyShipping(item: OrderItem, input: HTMLInputElement): void {
     if (input.value === '') {
       item.qtyShipping = undefined;
@@ -249,7 +240,6 @@ export class OrderDetailsPage implements OnInit {
     return item.qtyShipped || 0;
   }
 
-  /** Max that can still ship = picked − already shipped. */
   maxQtyShipping(item: OrderItem): number {
     return Math.max(this.qtyPicked(item) - this.qtyShipped(item), 0);
   }
@@ -259,14 +249,11 @@ export class OrderDetailsPage implements OnInit {
     return q !== undefined && Number.isInteger(q) && q > 0 && q <= this.maxQtyShipping(item);
   }
 
-  /** SHIP is enabled only when all box dimensions and qty shipping are filled. */
   canShip(): boolean {
     if (this.hasDimErrors()) {
       return false;
     }
-    // Multiple items: ship only the ticked items that have a Qty Shipping entered.
-    // Items left empty are skipped; at least one item must be filled, and every
-    // filled one must be valid.
+
     const filled = (this.order()?.items ?? []).filter(
       (i) => i.selected !== false && i.qtyShipping !== undefined
     );
@@ -289,7 +276,6 @@ export class OrderDetailsPage implements OnInit {
       return;
     }
 
-    // Add shipped quantity to Qty Shipped (qtyShipping is UI-only, not stored)
     let total = 0;
     const items = order.items.map((item) => {
       const { qtyShipping, ...rest } = item;
@@ -300,7 +286,6 @@ export class OrderDetailsPage implements OnInit {
       return rest;
     });
 
-    // Save items + selected box + dimensions to the JSON DB so they survive a refresh
     const changes = {
       items,
       selectedBox: this.selectedBox(),
