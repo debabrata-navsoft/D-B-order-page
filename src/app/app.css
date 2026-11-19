@@ -16,9 +16,9 @@
 }
 
 .navbar-container {
-  max-width: 1680px; /* match page width */
+  max-width: var(--page-max-width); /* shared width, see styles.css */
   margin: 0 auto;
-  padding: 0 8px;
+  padding: 0 var(--page-side-padding);
   height: 60px;
   display: flex;
   align-items: center;

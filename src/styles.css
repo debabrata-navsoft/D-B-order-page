@@ -5,3 +5,28 @@ body {
   padding: 0;
   background-color: #e6e6e6;
 }
+
+/*
+ * Shared page width — used by the navbar and both order pages so they always line up.
+ * Grows on large desktop screens instead of leaving big empty sides.
+ */
+:root {
+  --page-max-width: 1680px;
+  --page-side-padding: 8px;
+}
+
+/* Large desktop (Full HD 1920px+) */
+@media (min-width: 1920px) {
+  :root {
+    --page-max-width: 1840px;
+    --page-side-padding: 16px;
+  }
+}
+
+/* Extra large desktop (2K / 4K, 2400px+) */
+@media (min-width: 2400px) {
+  :root {
+    --page-max-width: 2240px;
+    --page-side-padding: 24px;
+  }
+}

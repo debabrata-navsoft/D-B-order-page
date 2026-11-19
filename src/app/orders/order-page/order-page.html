@@ -93,6 +93,8 @@
           <td mat-cell *matCellDef="let order">
             <div class="customer-cell">
               <span class="customer-name">{{ order.customerName }}</span>
+              <!-- shown only on small laptops, where the Email column is hidden -->
+              <span class="customer-email-inline">{{ order.customerEmail }}</span>
               <span class="customer-location">{{ order.shippingAddress?.city || order.cityStateZip }}</span>
             </div>
           </td>

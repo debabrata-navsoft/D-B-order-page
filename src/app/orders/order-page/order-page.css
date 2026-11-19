@@ -7,9 +7,9 @@
 }
 
 .orders-container {
-  max-width: 1680px; /* same width as navbar + details page */
+  max-width: var(--page-max-width); /* shared width, see styles.css */
   margin: 0 auto;
-  padding: 16px 8px 32px 8px;
+  padding: 16px var(--page-side-padding) 32px;
 }
 
 /* Page Header */
@@ -372,7 +372,14 @@
 .customer-email {
   font-size: 14px;
   color: #333333;
-  word-break: break-all;
+  overflow-wrap: anywhere; /* wrap long emails only when they don't fit */
+}
+
+.customer-email-inline {
+  display: none;
+  font-size: 12px;
+  color: #616161;
+  overflow-wrap: anywhere;
 }
 
 .customer-location {
@@ -625,6 +632,50 @@
   --mat-form-field-outlined-hover-outline-color: #888888;
   --mat-form-field-outlined-focus-outline-color: #2e7d32;
   --mat-form-field-outlined-container-shape: 6px;
+}
+
+/* ================= RESPONSIVE ================= */
+
+/* Large desktop (1920px+) */
+@media (min-width: 1920px) {
+  .orders-table th.mat-mdc-header-cell,
+  .orders-table td.mat-mdc-cell {
+    font-size: 15px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .items-cell {
+    max-width: 360px;
+  }
+}
+
+/* Laptop (1366px and below): tighter table */
+@media (max-width: 1366px) {
+  .orders-table th.mat-mdc-header-cell,
+  .orders-table td.mat-mdc-cell {
+    font-size: 13px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .items-cell {
+    max-width: 200px;
+  }
+  .date-cell {
+    white-space: nowrap;
+  }
+}
+
+/* Small laptop (below 1280px): hide the Email column, show email under the name */
+@media (max-width: 1279px) {
+  .orders-table .mat-column-email {
+    display: none;
+  }
+  .customer-email-inline {
+    display: block;
+  }
+  .items-cell {
+    max-width: 160px;
+  }
 }
 
 @media (max-width: 768px) {

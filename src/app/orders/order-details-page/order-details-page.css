@@ -7,9 +7,9 @@
 }
 
 .order-detail-page-wrapper {
-  max-width: 1680px;
+  max-width: var(--page-max-width); /* shared width, see styles.css */
   margin: 0 auto;
-  padding: 8px 8px 24px 8px;
+  padding: 8px var(--page-side-padding) 24px;
 }
 
 /* ================= TOP NAV CARD ================= */
@@ -268,7 +268,7 @@
 }
 
 .email-value {
-  word-break: break-all;
+  overflow-wrap: anywhere; /* wrap long emails only when they don't fit */
 }
 
 .uppercase-address {
@@ -529,7 +529,7 @@
 
 .items-grid-table {
   width: 100%;
-  min-width: 1000px;
+  min-width: 900px;
   table-layout: fixed; /* column widths come from the header row */
   border-collapse: collapse;
   font-size: 14px;
@@ -808,9 +808,86 @@
 }
 
 /* ================= RESPONSIVE ================= */
-@media (max-width: 1200px) {
+
+/* Large desktop (1920px+): a bit more breathing room */
+@media (min-width: 1920px) {
+  .panel-heading,
+  .section-heading {
+    font-size: 19px;
+  }
+  .panel-table,
+  .transaction-link,
+  .items-grid-table,
+  .items-grid-table th {
+    font-size: 15px;
+  }
+  .panel-table td {
+    padding: 8px 12px;
+  }
+  .items-grid-table td {
+    height: 36px;
+  }
+}
+
+/* Laptop (1366px and below): tighter panels and table */
+@media (max-width: 1366px) {
+  .panel-heading,
+  .section-heading {
+    font-size: 16px;
+  }
+  .panel-header,
+  .section-header {
+    height: 44px;
+  }
+  .panel-table,
+  .transaction-link {
+    font-size: 13px;
+  }
+  .panel-table td {
+    padding: 6px 8px;
+  }
+  .col-label {
+    width: 1%; /* label column shrinks to fit its text */
+    white-space: nowrap;
+  }
+  .col-value {
+    padding-left: 10px !important;
+  }
+  .dim-error-msg {
+    font-size: 11px;
+  }
+  .email-value {
+    font-size: 12px;
+  }
+  .box-select-container {
+    flex: 3; /* give the 4 dimension inputs a bit more room */
+  }
+  .items-grid-table,
+  .items-grid-table th {
+    font-size: 13px;
+  }
+  .items-grid-table th,
+  .items-grid-table td {
+    padding: 0 10px;
+  }
+  .box-dimensions-row {
+    gap: 14px;
+  }
+}
+
+/* Small laptop (below 1280px): 2 x 2 panels, Select Box on its own row */
+@media (max-width: 1279px) {
   .info-panels-grid {
     grid-template-columns: 1fr 1fr;
+  }
+  .box-dimensions-row {
+    flex-wrap: wrap;
+  }
+  .box-select-container {
+    flex: 1 1 100%;
+  }
+  .dim-input-group {
+    flex: 1 1 0;
   }
 }
 
