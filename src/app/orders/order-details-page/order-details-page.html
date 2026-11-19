@@ -202,6 +202,9 @@
 
           <!-- Dropdown Options Menu -->
           @if (isBoxDropdownOpen()) {
+            <!-- invisible full-page layer: clicking outside the menu closes it -->
+            <div class="dropdown-backdrop" (click)="closeBoxDropdown()"></div>
+
             <div class="dropdown-menu-list">
               @for (boxOption of boxOptions; track boxOption) {
                 <div
@@ -216,29 +219,90 @@
           }
         </div>
 
-        <!-- Dimension Inputs (floating label, mandatory) -->
-        @for (f of dimensionFields; track f.key) {
-          <div class="dim-input-group" [class.has-error]="showDimError(f.key)">
-            <div class="dim-field">
-              <input
-                type="number"
-                min="0"
-                step="any"
-                class="dim-input"
-                [id]="'dim-' + f.key"
-                [placeholder]="f.placeholder"
-                required
-                [ngModel]="dims()[f.key]"
-                (ngModelChange)="setDim(f.key, $event)"
-                (blur)="markTouched(f.key)"
-              />
-              <label class="dim-label" [for]="'dim-' + f.key">{{ f.label }} *</label>
-            </div>
-            @if (showDimError(f.key)) {
-              <span class="dim-error-msg">{{ f.error }}</span>
-            }
+        <!-- Dimension Inputs (floating label, all required) -->
+        <!-- Length -->
+        <div class="dim-input-group" [class.has-error]="showError(boxLength(), lengthTouched())">
+          <div class="dim-field">
+            <input
+              id="dim-length"
+              type="number"
+              min="0"
+              step="any"
+              class="dim-input"
+              placeholder="Enter length"
+              [ngModel]="boxLength()"
+              (ngModelChange)="boxLength.set($event)"
+              (blur)="lengthTouched.set(true)"
+            />
+            <label class="dim-label" for="dim-length">Length (in) *</label>
           </div>
-        }
+          @if (showError(boxLength(), lengthTouched())) {
+            <span class="dim-error-msg">Length must be greater than 0</span>
+          }
+        </div>
+
+        <!-- Width -->
+        <div class="dim-input-group" [class.has-error]="showError(boxWidth(), widthTouched())">
+          <div class="dim-field">
+            <input
+              id="dim-width"
+              type="number"
+              min="0"
+              step="any"
+              class="dim-input"
+              placeholder="Enter width"
+              [ngModel]="boxWidth()"
+              (ngModelChange)="boxWidth.set($event)"
+              (blur)="widthTouched.set(true)"
+            />
+            <label class="dim-label" for="dim-width">Width (in) *</label>
+          </div>
+          @if (showError(boxWidth(), widthTouched())) {
+            <span class="dim-error-msg">Width must be greater than 0</span>
+          }
+        </div>
+
+        <!-- Height -->
+        <div class="dim-input-group" [class.has-error]="showError(boxHeight(), heightTouched())">
+          <div class="dim-field">
+            <input
+              id="dim-height"
+              type="number"
+              min="0"
+              step="any"
+              class="dim-input"
+              placeholder="Enter height"
+              [ngModel]="boxHeight()"
+              (ngModelChange)="boxHeight.set($event)"
+              (blur)="heightTouched.set(true)"
+            />
+            <label class="dim-label" for="dim-height">Height (in) *</label>
+          </div>
+          @if (showError(boxHeight(), heightTouched())) {
+            <span class="dim-error-msg">Height must be greater than 0</span>
+          }
+        </div>
+
+        <!-- Weight -->
+        <div class="dim-input-group" [class.has-error]="showError(boxWeight(), weightTouched())">
+          <div class="dim-field">
+            <input
+              id="dim-weight"
+              type="number"
+              min="0"
+              step="any"
+              class="dim-input"
+              placeholder="Enter weight"
+              [ngModel]="boxWeight()"
+              (ngModelChange)="boxWeight.set($event)"
+              (blur)="weightTouched.set(true)"
+            />
+            <label class="dim-label" for="dim-weight">Weight (lbs) *</label>
+          </div>
+          @if (showError(boxWeight(), weightTouched())) {
+            <span class="dim-error-msg">Weight must be greater than 0</span>
+          }
+        </div>
       </div>
 
       <!-- Items Table -->

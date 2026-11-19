@@ -397,6 +397,13 @@
   transform: rotate(180deg);
 }
 
+/* Invisible layer behind the open menu — a click on it closes the menu */
+.dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
 .dropdown-menu-list {
   position: absolute;
   top: calc(100% + 2px);
