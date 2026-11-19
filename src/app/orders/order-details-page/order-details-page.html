@@ -29,17 +29,19 @@
     <div class="top-nav-card">
       <div class="top-nav-left">
         <div class="order-icon-badge">
-          <svg class="order-store-svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M4 4h16v3H4V4zm0 5h16v11H4V9zm2 2v7h3v-7H6zm5 0v7h2v-7h-2zm4 0v7h3v-7h-3z"/>
-          </svg>
+          <mat-icon class="order-store-icon" fontSet="material-symbols-outlined">table_chart</mat-icon>
         </div>
         <h1 class="order-number-heading">Order # {{ o.orderNumber }}</h1>
         <span class="status-packing-pill">{{ o.status }}</span>
       </div>
 
       <div class="top-nav-right">
-        <button class="nav-arrow-btn" (click)="prevOrder()" title="Previous Order">&lt;</button>
-        <button class="nav-arrow-btn" (click)="nextOrder()" title="Next Order">&gt;</button>
+        <button class="nav-arrow-btn" (click)="prevOrder()" title="Previous Order">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button class="nav-arrow-btn" (click)="nextOrder()" title="Next Order">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
         <button class="nav-back-btn" (click)="backToOrders()">Back</button>
       </div>
     </div>
@@ -146,9 +148,7 @@
           <h3 class="panel-heading">Shipping Information</h3>
           @if (o.unreadMessages) {
             <div class="chat-badge-box">
-              <svg class="chat-icon-svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-              </svg>
+              <mat-icon class="chat-icon">chat</mat-icon>
               <span class="chat-badge-count">{{ o.unreadMessages }}</span>
             </div>
           }
@@ -185,8 +185,11 @@
 
     <!-- ITEM DETAILS SECTION -->
     <div class="item-details-section">
-      <h2 class="section-heading">Item Details</h2>
+      <div class="section-header">
+        <h2 class="section-heading">Item Details</h2>
+      </div>
 
+      <div class="section-body">
       <!-- Box Config & Dimensions Row -->
       <div class="box-dimensions-row">
         <!-- Select Box Custom Dropdown -->
@@ -194,7 +197,7 @@
           <div class="custom-select-box" (click)="toggleBoxDropdown()">
             <label class="floating-label">Select Box</label>
             <span class="selected-text">{{ selectedBox() }}</span>
-            <span class="dropdown-caret">▼</span>
+            <mat-icon class="dropdown-caret" [class.open]="isBoxDropdownOpen()">arrow_drop_down</mat-icon>
           </div>
 
           <!-- Dropdown Options Menu -->
@@ -213,61 +216,29 @@
           }
         </div>
 
-        <!-- Length Input -->
-        <div class="dim-input-group" [class.has-error]="showValidationErrors()">
-          <label class="dim-label">Length (in){{ showValidationErrors() ? '*' : '' }}</label>
-          <input
-            type="number"
-            class="dim-input"
-            [ngModel]="boxLength()"
-            (ngModelChange)="boxLength.set($event)"
-          />
-          @if (showValidationErrors()) {
-            <span class="dim-error-msg">Length must be greater than 0</span>
-          }
-        </div>
-
-        <!-- Width Input -->
-        <div class="dim-input-group" [class.has-error]="showValidationErrors()">
-          <label class="dim-label">Width (in){{ showValidationErrors() ? '*' : '' }}</label>
-          <input
-            type="number"
-            class="dim-input"
-            [ngModel]="boxWidth()"
-            (ngModelChange)="boxWidth.set($event)"
-          />
-          @if (showValidationErrors()) {
-            <span class="dim-error-msg">Width must be greater than 0</span>
-          }
-        </div>
-
-        <!-- Height Input -->
-        <div class="dim-input-group" [class.has-error]="showValidationErrors()">
-          <label class="dim-label">Height (in){{ showValidationErrors() ? '*' : '' }}</label>
-          <input
-            type="number"
-            class="dim-input"
-            [ngModel]="boxHeight()"
-            (ngModelChange)="boxHeight.set($event)"
-          />
-          @if (showValidationErrors()) {
-            <span class="dim-error-msg">Height must be greater than 0</span>
-          }
-        </div>
-
-        <!-- Weight Input -->
-        <div class="dim-input-group" [class.has-error]="showValidationErrors()">
-          <label class="dim-label">Weight (lbs){{ showValidationErrors() ? '*' : '' }}</label>
-          <input
-            type="number"
-            class="dim-input"
-            [ngModel]="boxWeight()"
-            (ngModelChange)="boxWeight.set($event)"
-          />
-          @if (showValidationErrors()) {
-            <span class="dim-error-msg">Weight must be greater than 0</span>
-          }
-        </div>
+        <!-- Dimension Inputs (floating label, mandatory) -->
+        @for (f of dimensionFields; track f.key) {
+          <div class="dim-input-group" [class.has-error]="showDimError(f.key)">
+            <div class="dim-field">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                class="dim-input"
+                [id]="'dim-' + f.key"
+                [placeholder]="f.placeholder"
+                required
+                [ngModel]="dims()[f.key]"
+                (ngModelChange)="setDim(f.key, $event)"
+                (blur)="markTouched(f.key)"
+              />
+              <label class="dim-label" [for]="'dim-' + f.key">{{ f.label }} *</label>
+            </div>
+            @if (showDimError(f.key)) {
+              <span class="dim-error-msg">{{ f.error }}</span>
+            }
+          </div>
+        }
       </div>
 
       <!-- Items Table -->
@@ -275,10 +246,8 @@
         <table class="items-grid-table">
           <thead>
             <tr>
-              <th class="th-num">#</th>
-              <th class="th-check">
-                <input type="checkbox" checked class="blue-checkbox" />
-              </th>
+              <th class="th-num"></th>
+              <th class="th-check"></th>
               <th class="th-product">Product Name</th>
               <th class="th-sku">SKU</th>
               <th class="th-qty">Qty Ordered</th>
@@ -293,12 +262,15 @@
               <tr class="item-row">
                 <td class="td-num">{{ i + 1 }}</td>
                 <td class="td-check">
-                  <input
-                    type="checkbox"
-                    class="blue-checkbox"
-                    [checked]="item.selected !== false"
-                    (change)="toggleItemSelection(item)"
-                  />
+                  <label class="check-wrap">
+                    <input
+                      type="checkbox"
+                      class="blue-checkbox"
+                      [checked]="item.selected !== false"
+                      (change)="toggleItemSelection(item)"
+                    />
+                    <mat-icon class="check-icon">check</mat-icon>
+                  </label>
                 </td>
                 <td class="td-product text-red">
                   {{ item.productName || item.name }}
@@ -307,16 +279,23 @@
                   {{ item.sku || '2008756' }}
                 </td>
                 <td class="td-qty">{{ item.qtyOrdered || item.quantity || 7 }}</td>
-                <td class="td-qty">{{ item.qtyPicked || item.quantity || 5 }}</td>
-                <td class="td-qty">{{ item.qtyShipped || 0 }}</td>
+                <td class="td-qty">{{ qtyPicked(item) }}</td>
+                <td class="td-qty">{{ qtyShipped(item) }}</td>
                 <td class="td-qty">{{ item.labelPrintedFor || 3 }}</td>
                 <td class="td-qty-shipping">
                   <input
                     type="number"
                     class="qty-shipping-input"
-                    [value]="item.qtyShipping !== undefined ? item.qtyShipping : 3"
-                    (input)="item.qtyShipping = +$any($event.target).value"
+                    [class.has-error]="isQtyShippingOver(item)"
+                    min="1"
+                    [max]="maxQtyShipping(item)"
+                    [disabled]="maxQtyShipping(item) === 0"
+                    [value]="item.qtyShipping ?? ''"
+                    (input)="setQtyShipping(item, $any($event.target).value)"
                   />
+                  @if (isQtyShippingOver(item)) {
+                    <span class="qty-error-msg">Max {{ maxQtyShipping(item) }} allowed</span>
+                  }
                 </td>
               </tr>
             }
@@ -336,26 +315,23 @@
         </button>
         <button class="btn-outline-red" (click)="onReprintLabel()">Reprint Label</button>
       </div>
-
-      <!-- Bottom Action Bar -->
-      <div class="bottom-action-bar">
-        <div class="bottom-left-action">
-          <button class="btn-void-order" (click)="onVoidOrder()">
-            <span class="void-x-icon">✕</span>
-            <span>Void Order</span>
-          </button>
-        </div>
-
-        <div class="bottom-right-action">
-          <button
-            class="btn-ship"
-            [class.btn-ship-disabled]="showValidationErrors()"
-            (click)="onShip()"
-          >
-            SHIP
-          </button>
-        </div>
       </div>
+    </div>
+
+    <!-- Bottom Action Bar (outside the card, as in reference) -->
+    <div class="bottom-action-bar">
+      <button class="btn-void-order" (click)="onVoidOrder()">
+        <mat-icon class="void-x-icon">cancel</mat-icon>
+        <span>Void Order</span>
+      </button>
+
+      <button
+        class="btn-ship"
+        [disabled]="!canShip()"
+        (click)="onShip()"
+      >
+        SHIP
+      </button>
     </div>
   }
 </div>

@@ -16,9 +16,9 @@
 }
 
 .navbar-container {
-  max-width: 1440px;
+  max-width: 1680px; /* match order details page width */
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 8px;
   height: 58px;
   display: flex;
   align-items: center;
